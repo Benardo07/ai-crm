@@ -23,6 +23,7 @@ def create_app() -> Flask:
     configure_logging(app)
     register_extensions(app)
     register_blueprints(app)
+    register_task_system(app)
 
     with app.app_context():
         db.create_all()
@@ -70,3 +71,10 @@ def register_blueprints(app: Flask) -> None:
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(leads_bp)
+
+
+def register_task_system(app: Flask) -> None:
+    """Initialize background task helpers."""
+    from .services import tasks
+
+    tasks.init_app(app)

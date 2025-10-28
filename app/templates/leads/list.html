@@ -22,6 +22,10 @@
       background-color: #f8fafc;
     }
 
+    body.modal-open {
+      overflow: hidden;
+    }
+
     .page-header {
       background: var(--crm-surface);
       border: 1px solid var(--crm-border);
@@ -237,6 +241,67 @@
     .sentiment-negative {
       background: rgba(220, 53, 69, 0.12);
       color: #b02a37;
+    }
+
+    .sentiment-analyzing {
+      background: rgba(37, 99, 235, 0.1);
+      color: #1d4ed8;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .sentiment-analyzing .spinner-border {
+      width: 1rem;
+      height: 1rem;
+      border-width: 0.15rem;
+    }
+
+    .confirm-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1080;
+      padding: 1rem;
+    }
+
+    .confirm-modal.show {
+      display: flex;
+    }
+
+    .confirm-modal-dialog {
+      background: var(--crm-surface);
+      border-radius: 0.75rem;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+      max-width: 420px;
+      width: 100%;
+      overflow: hidden;
+      border: 1px solid var(--crm-border);
+    }
+
+    .confirm-modal-header,
+    .confirm-modal-footer {
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .confirm-modal-body {
+      padding: 0 1.25rem 1.25rem;
+      color: var(--crm-muted);
+    }
+
+    .confirm-modal-close {
+      background: transparent;
+      border: none;
+      font-size: 1.25rem;
+      line-height: 1;
+      color: #64748b;
+      cursor: pointer;
     }
 
     .sentiment-unavailable {
@@ -541,6 +606,30 @@
   <div id="kanbanView" class="view-content" style="display: none;">
     <div id="kanbanViewBody" class="kanban-board"></div>
   </div>
+
+  <div
+    id="deleteConfirmModal"
+    class="confirm-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-hidden="true"
+  >
+    <div class="confirm-modal-dialog">
+      <div class="confirm-modal-header">
+        <h5 class="mb-0">Confirm Deletion</h5>
+        <button type="button" class="confirm-modal-close" data-dismiss-modal>&times;</button>
+      </div>
+      <form method="post" id="deleteConfirmForm">
+        <div class="confirm-modal-body">
+          <p id="deleteConfirmMessage" class="mb-0"></p>
+        </div>
+        <div class="confirm-modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-dismiss-modal>Cancel</button>
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -549,6 +638,7 @@
     const statusOrder = {{ status_order|tojson|safe }};
     const sentimentOptions = {{ sentiment_options|tojson|safe }};
     let filteredLeads = [...leadsData];
+    let sentimentPollInterval = null;
 
     const STATUS_CLASSES = {
       "new": "status-new",
@@ -562,7 +652,8 @@
       "positive": { icon: "🟢", className: "sentiment-positive" },
       "neutral": { icon: "🟡", className: "sentiment-neutral" },
       "negative": { icon: "🔴", className: "sentiment-negative" },
-      "not analyzed": { icon: "⚪", className: "sentiment-unavailable" }
+      "not analyzed": { icon: "⚪", className: "sentiment-unavailable" },
+      "analyzing": { icon: "⏳", className: "sentiment-analyzing" }
     };
 
     function escapeHtml(value) {
@@ -593,7 +684,16 @@
       return `<span class="status-badge ${className}">${escapeHtml(status)}</span>`;
     }
 
-    function getSentimentPill(sentiment, score) {
+    function getSentimentPill(sentiment, score, isAnalyzing = false) {
+      if (isAnalyzing || normalize(sentiment) === "analyzing") {
+        return `
+          <span class="sentiment-pill sentiment-analyzing">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Analyzing…
+          </span>
+        `;
+      }
+
       const meta = SENTIMENT_META[normalize(sentiment)] || SENTIMENT_META["not analyzed"];
       const label = sentiment || "Not Analyzed";
       const scoreText =
@@ -632,24 +732,27 @@
             : "<span class=\"text-muted\">No notes yet.</span>";
 
           return `
-            <div class="list-card">
+            <div class="list-card" data-lead-id="${lead.id}" data-analyzing="${lead.isAnalyzing}">
               <div class="lead-identifiers">
                 <div class="lead-name">${safeName}</div>
                 <div class="lead-email"><i class="bi bi-envelope"></i> ${safeEmail}</div>
                 <div class="lead-phone"><i class="bi bi-telephone"></i> ${safePhone}</div>
               </div>
               <div>${getStatusBadge(lead.status)}</div>
-              <div>${getSentimentPill(lead.sentiment, lead.sentimentScore)}</div>
+              <div>${getSentimentPill(lead.sentiment, lead.sentimentScore, lead.isAnalyzing)}</div>
               <div class="lead-notes">${notesMarkup}</div>
               <div class="lead-actions">
                 <a class="btn btn-outline-secondary btn-sm" href="${lead.editUrl}">
                   <i class="bi bi-pencil-square"></i> Edit
                 </a>
-                <form method="post" action="${lead.deleteUrl}" onsubmit="return confirm('Delete this lead?');">
-                  <button class="btn btn-outline-danger btn-sm" type="submit">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </form>
+                <button
+                  class="btn btn-outline-danger btn-sm btn-delete"
+                  type="button"
+                  data-delete-url="${lead.deleteUrl}"
+                  data-lead-name="${safeName}"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
               </div>
             </div>
           `;
@@ -675,7 +778,7 @@
             : "<span class=\"text-muted\">No notes yet.</span>";
 
           return `
-            <div class="grid-card">
+            <div class="grid-card" data-lead-id="${lead.id}" data-analyzing="${lead.isAnalyzing}">
               <div class="grid-card-header">
                 <div>
                   <div class="grid-card-name">${safeName}</div>
@@ -689,7 +792,7 @@
               </div>
               <div class="grid-section">
                 <div class="grid-label">Sentiment</div>
-                <div class="grid-value">${getSentimentPill(lead.sentiment, lead.sentimentScore)}</div>
+                <div class="grid-value">${getSentimentPill(lead.sentiment, lead.sentimentScore, lead.isAnalyzing)}</div>
               </div>
               <div class="grid-section">
                 <div class="grid-label">Notes</div>
@@ -699,11 +802,14 @@
                 <a class="btn btn-outline-secondary btn-sm" href="${lead.editUrl}">
                   <i class="bi bi-pencil-square"></i> Edit
                 </a>
-                <form method="post" action="${lead.deleteUrl}" onsubmit="return confirm('Delete this lead?');">
-                  <button class="btn btn-outline-danger btn-sm" type="submit">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </form>
+                <button
+                  class="btn btn-outline-danger btn-sm btn-delete"
+                  type="button"
+                  data-delete-url="${lead.deleteUrl}"
+                  data-lead-name="${safeName}"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
               </div>
             </div>
           `;
@@ -750,24 +856,27 @@
                       ? escapeHtml(notesText)
                       : "<span class=\"text-muted\">No notes yet.</span>";
                     return `
-                      <div class="kanban-card">
+                      <div class="kanban-card" data-lead-id="${lead.id}" data-analyzing="${lead.isAnalyzing}">
                         <div>
                           <div class="kanban-card-name">${escapeHtml(lead.name)}</div>
                           <div class="kanban-card-email">${escapeHtml(lead.email)}</div>
                         </div>
                         <div class="kanban-card-sentiment">
-                          ${getSentimentPill(lead.sentiment, lead.sentimentScore)}
+                          ${getSentimentPill(lead.sentiment, lead.sentimentScore, lead.isAnalyzing)}
                         </div>
                         <div class="kanban-card-notes text-muted small">${notesValue}</div>
                         <div class="kanban-card-footer">
                           <a class="btn btn-sm btn-outline-secondary" href="${lead.editUrl}">
                             <i class="bi bi-pencil"></i>
                           </a>
-                          <form method="post" action="${lead.deleteUrl}" onsubmit="return confirm('Delete this lead?');">
-                            <button class="btn btn-sm btn-outline-danger" type="submit">
-                              <i class="bi bi-trash"></i>
-                            </button>
-                          </form>
+                          <button
+                            class="btn btn-sm btn-outline-danger btn-delete"
+                            type="button"
+                            data-delete-url="${lead.deleteUrl}"
+                            data-lead-name="${escapeHtml(lead.name)}"
+                          >
+                            <i class="bi bi-trash"></i>
+                          </button>
                         </div>
                       </div>
                     `;
@@ -810,6 +919,80 @@
       renderGridView();
       renderKanbanView();
       updateLeadMetrics();
+      startSentimentPolling();
+    }
+
+    function collectAnalyzingIds() {
+      return leadsData
+        .filter((lead) => lead.isAnalyzing)
+        .map((lead) => lead.id);
+    }
+
+    function pollSentiment() {
+      const activeIds = collectAnalyzingIds();
+      if (!activeIds.length) {
+        if (sentimentPollInterval) {
+          clearInterval(sentimentPollInterval);
+          sentimentPollInterval = null;
+        }
+        return;
+      }
+
+      fetch(`/leads/status?ids=${activeIds.join(",")}`)
+        .then((response) => (response.ok ? response.json() : []))
+        .then((data) => {
+          if (!Array.isArray(data)) {
+            return;
+          }
+
+          let updated = false;
+          data.forEach((item) => {
+            const target = leadsData.find((lead) => lead.id === item.id);
+            if (!target) {
+              return;
+            }
+            const newSentiment = item.sentiment || "Not Analyzed";
+            const newScore = item.sentiment_score ?? null;
+            const newAnalyzing = Boolean(item.is_analyzing);
+
+            if (
+              target.sentiment !== newSentiment ||
+              target.sentimentScore !== newScore ||
+              target.isAnalyzing !== newAnalyzing
+            ) {
+              target.sentiment = newSentiment;
+              target.sentimentScore = newScore;
+              target.isAnalyzing = newAnalyzing;
+              updated = true;
+            }
+          });
+
+          if (updated) {
+            filterLeads();
+          } else if (!collectAnalyzingIds().length && sentimentPollInterval) {
+            clearInterval(sentimentPollInterval);
+            sentimentPollInterval = null;
+          }
+        })
+        .catch(() => {
+          // ignore network errors; next tick will retry
+        });
+    }
+
+    function startSentimentPolling() {
+      const ids = collectAnalyzingIds();
+      if (!ids.length) {
+        if (sentimentPollInterval) {
+          clearInterval(sentimentPollInterval);
+          sentimentPollInterval = null;
+        }
+        return;
+      }
+
+      if (!sentimentPollInterval) {
+        pollSentiment();
+        sentimentPollInterval = setInterval(pollSentiment, 5000);
+      }
     }
 
     function filterLeads() {
@@ -825,7 +1008,8 @@
           normalize(lead.phone).includes(searchTerm);
 
         const matchesStatus = !statusFilter || lead.status === statusFilter;
-        const matchesSentiment = !sentimentFilter || lead.sentiment === sentimentFilter;
+        const matchesSentiment =
+          !sentimentFilter || lead.sentiment === sentimentFilter;
 
         return matchesSearch && matchesStatus && matchesSentiment;
       });
@@ -854,9 +1038,67 @@
       document.getElementById("sentimentFilter").addEventListener("change", filterLeads);
     }
 
+    function bindDeleteModal() {
+      const modalElement = document.getElementById("deleteConfirmModal");
+      const deleteForm = document.getElementById("deleteConfirmForm");
+      const deleteMessage = document.getElementById("deleteConfirmMessage");
+      const dismissButtons = modalElement?.querySelectorAll("[data-dismiss-modal]") || [];
+
+      if (!modalElement || !deleteForm || !deleteMessage) {
+        return;
+      }
+
+      const body = document.body;
+
+      const closeModal = () => {
+        deleteForm.removeAttribute("action");
+        deleteMessage.textContent = "";
+        modalElement.classList.remove("show");
+        modalElement.setAttribute("aria-hidden", "true");
+        body.classList.remove("modal-open");
+      };
+
+      dismissButtons.forEach((btn) => {
+        btn.addEventListener("click", closeModal);
+      });
+
+      modalElement.addEventListener("click", (event) => {
+        if (event.target === modalElement) {
+          closeModal();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && modalElement.classList.contains("show")) {
+          closeModal();
+        }
+      });
+
+      document.addEventListener("click", (event) => {
+        const trigger = event.target.closest(".btn-delete");
+        if (!trigger) {
+          return;
+        }
+
+        event.preventDefault();
+        const leadName = trigger.getAttribute("data-lead-name") || "this lead";
+        const deleteUrl = trigger.getAttribute("data-delete-url");
+
+        deleteForm.setAttribute("action", deleteUrl);
+        deleteMessage.textContent = `Delete ${leadName}? This action cannot be undone.`;
+
+        modalElement.classList.add("show");
+        modalElement.setAttribute("aria-hidden", "false");
+        body.classList.add("modal-open");
+        const submitButton = deleteForm.querySelector("button[type='submit']");
+        requestAnimationFrame(() => submitButton?.focus());
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       registerViewToggle();
       bindFilters();
+      bindDeleteModal();
       renderAllViews();
     });
   </script>

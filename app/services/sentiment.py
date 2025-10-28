@@ -1,9 +1,11 @@
 """Sentiment analysis helper powered by Hugging Face transformers."""
 
-from functools import lru_cache
 import logging
+from functools import lru_cache
 
 from transformers import pipeline
+
+from .tasks import submit
 
 LOGGER = logging.getLogger(__name__)
 MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
@@ -38,11 +40,38 @@ def analyze_sentiment(text: str | None) -> dict[str, float | str | None]:
 
     try:
         classifier = _sentiment_pipeline()
-        result = classifier(text[:512])[0]  
+        result = classifier(text[:512])[0]
         LOGGER.info("Sentiment raw result: %s", result)
         label = _normalize_label(result.get("label"))
         score = float(result.get("score")) if result.get("score") is not None else None
         return {"label": label, "score": score}
-    except Exception as exc: 
+    except Exception as exc:
         LOGGER.exception("Sentiment analysis failed: %s", exc)
         return {"label": None, "score": None}
+
+
+def enqueue_sentiment_refresh(lead_id: int) -> None:
+    """Schedule asynchronous sentiment evaluation for the given lead."""
+    submit(_refresh_lead_sentiment, lead_id)
+
+
+def _refresh_lead_sentiment(lead_id: int) -> None:
+    """Background update of a lead's sentiment fields."""
+    from ..extensions import db
+    from ..models import Lead
+
+    lead = Lead.query.get(lead_id)
+    if lead is None:
+        LOGGER.warning("Sentiment refresh skipped - lead %s missing.", lead_id)
+        return
+
+    if not lead.notes or not lead.notes.strip():
+        lead.sentiment = None
+        lead.sentiment_score = None
+        db.session.commit()
+        return
+
+    result = analyze_sentiment(lead.notes)
+    lead.sentiment = result["label"] or "Not Analyzed"
+    lead.sentiment_score = result["score"]
+    db.session.commit()
