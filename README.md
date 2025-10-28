@@ -92,6 +92,15 @@ python run.py
 
 Browse to `http://localhost:5000/`. The app redirects to `/login`; sign in using the credentials from `.env` to reach the dashboard.
 
+### Deployment Login
+
+If you deploy with the default sample credentials, the live site uses:
+
+- Username: `admin`
+- Password: `admin123!`
+
+Override these values in your environment variables before going to production.
+
 ---
 
 ## Workflow & Features
@@ -135,5 +144,3 @@ generate_password_hash("YourPassword")
 - The first sentiment analysis triggers a model download; subsequent requests reuse the cached pipeline.
 - `.env` is git-ignored; share `.env.example` for onboarding.
 - Console logs (`app.services.sentiment`) show raw model outputs, useful when debugging the AI pipeline.
-
-Enjoy extending AI-CRM—whether you add new automations, more analytics, or a richer notification system, the modular structure keeps changes straightforward. Happy shipping!
