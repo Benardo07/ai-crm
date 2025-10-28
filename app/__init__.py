@@ -1,6 +1,7 @@
 import logging
 import os
 
+from dotenv import load_dotenv
 from flask import Flask
 from werkzeug.security import generate_password_hash
 
@@ -9,6 +10,8 @@ from .extensions import db
 
 def create_app() -> Flask:
     """Application factory for the CRM app."""
+    load_dotenv()
+
     app = Flask(__name__)
 
     app.config.update(
@@ -29,17 +32,17 @@ def create_app() -> Flask:
 
 def configure_settings(app: Flask) -> None:
     """Configure application defaults and secrets."""
-    secret_key = os.environ.get("SECRET_KEY") or "change-me-in-production"
-    app.config.setdefault("SECRET_KEY", secret_key)
+    secret_key = os.environ.get("SECRET_KEY") or "appsecret"
+    app.config["SECRET_KEY"] = secret_key
 
     admin_username = os.environ.get("ADMIN_USERNAME") or "admin"
-    app.config.setdefault("ADMIN_USERNAME", admin_username)
+    app.config["ADMIN_USERNAME"] = admin_username
 
     password_hash = os.environ.get("ADMIN_PASSWORD_HASH")
     if not password_hash:
         admin_password = os.environ.get("ADMIN_PASSWORD") or "AdminPass123!"
         password_hash = generate_password_hash(admin_password)
-    app.config.setdefault("ADMIN_PASSWORD_HASH", password_hash)
+    app.config["ADMIN_PASSWORD_HASH"] = password_hash
 
 
 def configure_logging(app: Flask) -> None:
