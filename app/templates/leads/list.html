@@ -1,0 +1,863 @@
+{% extends "layout/base.html" %}
+{% set container_class = "container-xxl" %}
+
+{% block extra_head %}
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+  >
+  <style>
+    :root {
+      --crm-primary: #0d6efd;
+      --crm-success: #198754;
+      --crm-warning: #ffc107;
+      --crm-danger: #dc3545;
+      --crm-info: #0dcaf0;
+      --crm-surface: #ffffff;
+      --crm-border: #dee2e6;
+      --crm-muted: #6c757d;
+    }
+
+    body {
+      background-color: #f8fafc;
+    }
+
+    .page-header {
+      background: var(--crm-surface);
+      border: 1px solid var(--crm-border);
+      border-radius: 0.75rem;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+    }
+
+    .page-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-header p {
+      color: var(--crm-muted);
+      margin-bottom: 0;
+    }
+
+    .summary-cards .summary-card {
+      background: var(--crm-surface);
+      border: 1px solid var(--crm-border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      height: 100%;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .summary-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--crm-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+    }
+
+    .summary-value {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .summary-subtext {
+      font-size: 0.9rem;
+    }
+
+    .search-filter-bar {
+      background: var(--crm-surface);
+      border: 1px solid var(--crm-border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .search-input {
+      border-radius: 0.75rem;
+      border: 1px solid var(--crm-border);
+      padding: 0.8rem 1rem;
+      box-shadow: none;
+    }
+
+    .search-input:focus {
+      border-color: rgba(13, 110, 253, 0.25);
+      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.05);
+    }
+
+    .filter-select {
+      border-radius: 0.75rem;
+      border: 1px solid var(--crm-border);
+      padding: 0.75rem 1rem;
+    }
+
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .view-btn {
+      border: 1px solid var(--crm-border);
+      border-radius: 0.75rem;
+      background: var(--crm-surface);
+      color: #0f172a;
+      padding: 0.6rem 1.1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .view-btn:hover {
+      border-color: var(--crm-primary);
+      color: var(--crm-primary);
+    }
+
+    .view-btn.active {
+      background: var(--crm-primary);
+      color: white;
+      border-color: var(--crm-primary);
+      box-shadow: 0 10px 20px rgba(13, 110, 253, 0.15);
+    }
+
+    .lead-count {
+      font-size: 0.95rem;
+      color: var(--crm-muted);
+    }
+
+    .lead-count span {
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .list-view {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .list-card {
+      background: var(--crm-surface);
+      border: 1px solid var(--crm-border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      display: grid;
+      grid-template-columns: 1.6fr 1fr 1fr 1.2fr 140px;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .lead-identifiers {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .lead-name {
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .lead-email,
+    .lead-phone {
+      font-size: 0.9rem;
+      color: var(--crm-muted);
+    }
+
+    .lead-notes {
+      font-size: 0.9rem;
+      color: var(--crm-muted);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      border-radius: 9999px;
+      padding: 0.35rem 0.85rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .status-new {
+      background: rgba(13, 110, 253, 0.1);
+      color: #0c58d4;
+    }
+
+    .status-contacted {
+      background: rgba(13, 202, 240, 0.15);
+      color: #0b7285;
+    }
+
+    .status-in-progress {
+      background: rgba(25, 135, 84, 0.12);
+      color: #0f5132;
+    }
+
+    .status-converted {
+      background: rgba(25, 135, 84, 0.18);
+      color: #0e5f3c;
+    }
+
+    .status-lost {
+      background: rgba(220, 53, 69, 0.12);
+      color: #b02a37;
+    }
+
+    .sentiment-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      border-radius: 9999px;
+      padding: 0.35rem 0.8rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .sentiment-positive {
+      background: rgba(22, 163, 74, 0.12);
+      color: #15803d;
+    }
+
+    .sentiment-neutral {
+      background: rgba(234, 179, 8, 0.12);
+      color: #b45309;
+    }
+
+    .sentiment-negative {
+      background: rgba(220, 53, 69, 0.12);
+      color: #b02a37;
+    }
+
+    .sentiment-unavailable {
+      background: rgba(148, 163, 184, 0.12);
+      color: #475569;
+    }
+
+    .lead-actions {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    .lead-actions form {
+      display: inline;
+    }
+
+    .lead-actions .btn {
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      padding-inline: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .grid-view {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .grid-card {
+      background: var(--crm-surface);
+      border: 1px solid var(--crm-border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      height: 100%;
+    }
+
+    .grid-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .grid-card-name {
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .grid-label {
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      color: var(--crm-muted);
+      font-weight: 600;
+    }
+
+    .grid-value {
+      font-size: 0.95rem;
+      color: #0f172a;
+      word-break: break-word;
+    }
+
+    .grid-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+
+    .kanban-board {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(5, minmax(220px, 1fr));
+    }
+
+    .kanban-column {
+      background: var(--crm-surface);
+      border-radius: 0.75rem;
+      border: 1px solid var(--crm-border);
+      padding: 1rem;
+      min-height: 240px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .kanban-column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .kanban-column-title {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .kanban-count {
+      font-size: 0.85rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      background: rgba(15, 23, 42, 0.08);
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .kanban-card {
+      border-radius: 0.75rem;
+      border: 1px solid var(--crm-border);
+      padding: 0.85rem;
+      background: rgba(15, 23, 42, 0.02);
+      margin-bottom: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .kanban-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .kanban-card-name {
+      font-weight: 600;
+    }
+
+    .kanban-card-email {
+      font-size: 0.85rem;
+      color: var(--crm-muted);
+    }
+
+    .kanban-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      color: rgba(15, 23, 42, 0.2);
+      display: block;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 1400px) {
+      .kanban-board {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+    }
+
+    @media (max-width: 992px) {
+      .list-card {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+
+      .lead-actions {
+        justify-content: flex-start;
+      }
+
+      .view-toggle {
+        flex-wrap: wrap;
+      }
+
+      .kanban-board {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3">
+      <div>
+        <h1>Lead Management</h1>
+        <p>Search, filter, and prioritize leads with AI-powered sentiment insights.</p>
+      </div>
+      <div class="text-md-end text-muted small">
+        {% if last_updated %}
+          Last updated <strong>{{ last_updated }}</strong>
+        {% else %}
+          No activity yet
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 summary-cards mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="summary-card">
+        <div class="summary-title">Total Leads</div>
+        <div class="summary-value" id="summaryTotal">{{ total_leads }}</div>
+        <div class="summary-subtext text-muted">Across all statuses</div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="summary-card">
+        <div class="summary-title text-success">Positive Sentiment</div>
+        <div class="summary-value text-success" id="summaryPositive">{{ sentiment_summary["Positive"] }}</div>
+        <div class="summary-subtext text-muted">Highly engaged leads</div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="summary-card">
+        <div class="summary-title text-warning">Neutral Sentiment</div>
+        <div class="summary-value text-warning" id="summaryNeutral">{{ sentiment_summary["Neutral"] }}</div>
+        <div class="summary-subtext text-muted">Monitor for updates</div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="summary-card">
+        <div class="summary-title text-danger">Negative Sentiment</div>
+        <div class="summary-value text-danger" id="summaryNegative">{{ sentiment_summary["Negative"] }}</div>
+        <div class="summary-subtext text-muted">Needs immediate attention</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-filter-bar">
+    <div class="row g-3 align-items-center">
+      <div class="col-12 col-lg-4">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0">
+            <i class="bi bi-search"></i>
+          </span>
+          <input
+            id="searchInput"
+            class="form-control search-input border-start-0"
+            type="search"
+            placeholder="Search by name, email, or phone"
+            aria-label="Search leads"
+          >
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <select id="statusFilter" class="form-select filter-select">
+          <option value="">All statuses</option>
+          {% for status in statuses %}
+            <option value="{{ status }}">{{ status }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-lg-3">
+        <select id="sentimentFilter" class="form-select filter-select">
+          <option value="">All sentiments</option>
+          {% for sentiment in sentiment_options %}
+            <option value="{{ sentiment }}">{{ sentiment }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-lg-2">
+        <a class="btn btn-primary w-100" href="{{ url_for('leads.add_lead') }}">
+          <i class="bi bi-plus-circle"></i>
+          Add Lead
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-column flex-md-row justify-content-md-between gap-3 align-items-md-center mb-3">
+    <div class="lead-count">
+      Showing <span id="leadCount">{{ total_leads }}</span> lead{{ '' if total_leads == 1 else 's' }}
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" type="button" data-view="list">
+        <i class="bi bi-list-task"></i>
+        List
+      </button>
+      <button class="view-btn" type="button" data-view="grid">
+        <i class="bi bi-grid-3x3-gap"></i>
+        Grid
+      </button>
+      <button class="view-btn" type="button" data-view="kanban">
+        <i class="bi bi-kanban"></i>
+        Kanban
+      </button>
+    </div>
+  </div>
+
+  <div id="listView" class="view-content">
+    <div id="listViewBody" class="list-view"></div>
+  </div>
+
+  <div id="gridView" class="view-content" style="display: none;">
+    <div id="gridViewBody" class="grid-view"></div>
+  </div>
+
+  <div id="kanbanView" class="view-content" style="display: none;">
+    <div id="kanbanViewBody" class="kanban-board"></div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    const leadsData = {{ leads_payload|tojson|safe }};
+    const statusOrder = {{ status_order|tojson|safe }};
+    const sentimentOptions = {{ sentiment_options|tojson|safe }};
+    let filteredLeads = [...leadsData];
+
+    const STATUS_CLASSES = {
+      "new": "status-new",
+      "contacted": "status-contacted",
+      "in progress": "status-in-progress",
+      "converted": "status-converted",
+      "lost": "status-lost"
+    };
+
+    const SENTIMENT_META = {
+      "positive": { icon: "🟢", className: "sentiment-positive" },
+      "neutral": { icon: "🟡", className: "sentiment-neutral" },
+      "negative": { icon: "🔴", className: "sentiment-negative" },
+      "not analyzed": { icon: "⚪", className: "sentiment-unavailable" }
+    };
+
+    function escapeHtml(value) {
+      if (typeof value !== "string") {
+        return value ?? "";
+      }
+      return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function normalize(value) {
+      return (value || "").toString().toLowerCase();
+    }
+
+    function formatSentimentScore(score) {
+      if (score === null || score === undefined) {
+        return "";
+      }
+      return `${(score * 100).toFixed(1)}%`;
+    }
+
+    function getStatusBadge(status) {
+      const className = STATUS_CLASSES[normalize(status)] || "status-new";
+      return `<span class="status-badge ${className}">${escapeHtml(status)}</span>`;
+    }
+
+    function getSentimentPill(sentiment, score) {
+      const meta = SENTIMENT_META[normalize(sentiment)] || SENTIMENT_META["not analyzed"];
+      const label = sentiment || "Not Analyzed";
+      const scoreText =
+        score !== null && score !== undefined
+          ? `<span class="ms-1 text-muted small">${formatSentimentScore(score)}</span>`
+          : "";
+      return `<span class="sentiment-pill ${meta.className}">${meta.icon} ${escapeHtml(label)}${scoreText}</span>`;
+    }
+
+    function truncate(value, length = 140) {
+      if (!value) {
+        return "";
+      }
+      const text = value.toString().trim();
+      if (text.length <= length) {
+        return text;
+      }
+      return `${text.slice(0, length - 1)}…`;
+    }
+
+    function renderListView() {
+      const container = document.getElementById("listViewBody");
+      if (!filteredLeads.length) {
+        container.innerHTML = `<div class="empty-state"><i class="bi bi-emoji-frown"></i><p class="mb-0 text-muted">No leads match the current filters.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = filteredLeads
+        .map((lead) => {
+          const safeName = escapeHtml(lead.name);
+          const safeEmail = escapeHtml(lead.email);
+          const safePhone = lead.phone ? escapeHtml(lead.phone) : "—";
+          const notesText = truncate(lead.notes || "", 180);
+          const notesMarkup = notesText
+            ? escapeHtml(notesText)
+            : "<span class=\"text-muted\">No notes yet.</span>";
+
+          return `
+            <div class="list-card">
+              <div class="lead-identifiers">
+                <div class="lead-name">${safeName}</div>
+                <div class="lead-email"><i class="bi bi-envelope"></i> ${safeEmail}</div>
+                <div class="lead-phone"><i class="bi bi-telephone"></i> ${safePhone}</div>
+              </div>
+              <div>${getStatusBadge(lead.status)}</div>
+              <div>${getSentimentPill(lead.sentiment, lead.sentimentScore)}</div>
+              <div class="lead-notes">${notesMarkup}</div>
+              <div class="lead-actions">
+                <a class="btn btn-outline-secondary btn-sm" href="${lead.editUrl}">
+                  <i class="bi bi-pencil-square"></i> Edit
+                </a>
+                <form method="post" action="${lead.deleteUrl}" onsubmit="return confirm('Delete this lead?');">
+                  <button class="btn btn-outline-danger btn-sm" type="submit">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    function renderGridView() {
+      const container = document.getElementById("gridViewBody");
+      if (!filteredLeads.length) {
+        container.innerHTML = `<div class="empty-state"><i class="bi bi-card-list"></i><p class="mb-0 text-muted">No leads available for this view.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = filteredLeads
+        .map((lead) => {
+          const safeName = escapeHtml(lead.name);
+          const safeEmail = escapeHtml(lead.email);
+          const safePhone = lead.phone ? escapeHtml(lead.phone) : "—";
+          const notesText = truncate(lead.notes || "", 160);
+          const notesValue = notesText
+            ? escapeHtml(notesText)
+            : "<span class=\"text-muted\">No notes yet.</span>";
+
+          return `
+            <div class="grid-card">
+              <div class="grid-card-header">
+                <div>
+                  <div class="grid-card-name">${safeName}</div>
+                  <div class="lead-email"><i class="bi bi-envelope"></i> ${safeEmail}</div>
+                </div>
+                ${getStatusBadge(lead.status)}
+              </div>
+              <div class="grid-section">
+                <div class="grid-label">Phone</div>
+                <div class="grid-value"><i class="bi bi-telephone"></i> ${safePhone}</div>
+              </div>
+              <div class="grid-section">
+                <div class="grid-label">Sentiment</div>
+                <div class="grid-value">${getSentimentPill(lead.sentiment, lead.sentimentScore)}</div>
+              </div>
+              <div class="grid-section">
+                <div class="grid-label">Notes</div>
+                <div class="grid-value">${notesValue}</div>
+              </div>
+              <div class="grid-actions">
+                <a class="btn btn-outline-secondary btn-sm" href="${lead.editUrl}">
+                  <i class="bi bi-pencil-square"></i> Edit
+                </a>
+                <form method="post" action="${lead.deleteUrl}" onsubmit="return confirm('Delete this lead?');">
+                  <button class="btn btn-outline-danger btn-sm" type="submit">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    function renderKanbanView() {
+      const container = document.getElementById("kanbanViewBody");
+      if (!filteredLeads.length) {
+        container.innerHTML = `<div class="empty-state w-100"><i class="bi bi-kanban"></i><p class="mb-0 text-muted">No leads to display on the board.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = statusOrder
+        .map((status) => {
+          const leadsForStatus = filteredLeads.filter((lead) => lead.status === status);
+          if (!leadsForStatus.length) {
+            return `
+              <div class="kanban-column">
+                <div class="kanban-column-header">
+                  <div class="kanban-column-title">${escapeHtml(status)}</div>
+                  <span class="kanban-count">0</span>
+                </div>
+                <div class="empty-state py-4">
+                  <i class="bi bi-inbox"></i>
+                  <p class="text-muted mb-0">No leads</p>
+                </div>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="kanban-column">
+              <div class="kanban-column-header">
+                <div class="kanban-column-title">${escapeHtml(status)}</div>
+                <span class="kanban-count">${leadsForStatus.length}</span>
+              </div>
+              <div class="flex-grow-1 d-flex flex-column">
+                ${leadsForStatus
+                  .map((lead) => {
+                    const notesText = truncate(lead.notes || "", 120);
+                    const notesValue = notesText
+                      ? escapeHtml(notesText)
+                      : "<span class=\"text-muted\">No notes yet.</span>";
+                    return `
+                      <div class="kanban-card">
+                        <div>
+                          <div class="kanban-card-name">${escapeHtml(lead.name)}</div>
+                          <div class="kanban-card-email">${escapeHtml(lead.email)}</div>
+                        </div>
+                        <div class="kanban-card-sentiment">
+                          ${getSentimentPill(lead.sentiment, lead.sentimentScore)}
+                        </div>
+                        <div class="kanban-card-notes text-muted small">${notesValue}</div>
+                        <div class="kanban-card-footer">
+                          <a class="btn btn-sm btn-outline-secondary" href="${lead.editUrl}">
+                            <i class="bi bi-pencil"></i>
+                          </a>
+                          <form method="post" action="${lead.deleteUrl}" onsubmit="return confirm('Delete this lead?');">
+                            <button class="btn btn-sm btn-outline-danger" type="submit">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    `;
+                  })
+                  .join("")}
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    function updateLeadMetrics() {
+      const total = filteredLeads.length;
+      const counts = {
+        "Positive": 0,
+        "Neutral": 0,
+        "Negative": 0,
+        "Not Analyzed": 0
+      };
+
+      filteredLeads.forEach((lead) => {
+        const sentimentLabel = lead.sentiment || "Not Analyzed";
+        if (counts[sentimentLabel] !== undefined) {
+          counts[sentimentLabel] += 1;
+        } else {
+          counts["Not Analyzed"] += 1;
+        }
+      });
+
+      document.getElementById("leadCount").textContent = total;
+      document.getElementById("summaryTotal").textContent = total;
+      document.getElementById("summaryPositive").textContent = counts["Positive"];
+      document.getElementById("summaryNeutral").textContent = counts["Neutral"];
+      document.getElementById("summaryNegative").textContent = counts["Negative"];
+    }
+
+    function renderAllViews() {
+      renderListView();
+      renderGridView();
+      renderKanbanView();
+      updateLeadMetrics();
+    }
+
+    function filterLeads() {
+      const searchTerm = normalize(document.getElementById("searchInput").value);
+      const statusFilter = document.getElementById("statusFilter").value;
+      const sentimentFilter = document.getElementById("sentimentFilter").value;
+
+      filteredLeads = leadsData.filter((lead) => {
+        const matchesSearch =
+          !searchTerm ||
+          normalize(lead.name).includes(searchTerm) ||
+          normalize(lead.email).includes(searchTerm) ||
+          normalize(lead.phone).includes(searchTerm);
+
+        const matchesStatus = !statusFilter || lead.status === statusFilter;
+        const matchesSentiment = !sentimentFilter || lead.sentiment === sentimentFilter;
+
+        return matchesSearch && matchesStatus && matchesSentiment;
+      });
+
+      renderAllViews();
+    }
+
+    function registerViewToggle() {
+      const buttons = document.querySelectorAll(".view-btn");
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          buttons.forEach((other) => other.classList.remove("active"));
+          btn.classList.add("active");
+
+          const targetView = btn.dataset.view;
+          document.querySelectorAll(".view-content").forEach((section) => {
+            section.style.display = section.id === `${targetView}View` ? "block" : "none";
+          });
+        });
+      });
+    }
+
+    function bindFilters() {
+      document.getElementById("searchInput").addEventListener("input", filterLeads);
+      document.getElementById("statusFilter").addEventListener("change", filterLeads);
+      document.getElementById("sentimentFilter").addEventListener("change", filterLeads);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      registerViewToggle();
+      bindFilters();
+      renderAllViews();
+    });
+  </script>
+{% endblock %}

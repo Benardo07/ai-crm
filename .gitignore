@@ -1,0 +1,56 @@
+# Environments
+.venv/
+env/
+venv/
+
+# Byte-compiled / cached files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# PyInstaller
+*.spec
+
+# Logs
+logs/
+*.log
+
+# Test artifacts
+.pytest_cache/
+.coverage
+coverage.xml
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Database files
+*.sqlite3
+crm.db
+
+# Node/npm (in case frontend assets get added later)
+node_modules/
+
+# Python tooling
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# Flask debug artifacts
+instance/

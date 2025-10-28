@@ -1,0 +1,60 @@
+{% extends "layout/base.html" %}
+{% set container_class = "container" %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h1 class="h4 mb-3 text-center">Sign in to AI-CRM</h1>
+          <p class="text-muted text-center mb-4">Use the administrator credentials to access the dashboard.</p>
+
+          {% if errors %}
+            <div class="alert alert-danger" role="alert">
+              <ul class="mb-0">
+                {% for error in errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+
+          <form method="post" novalidate>
+            <input type="hidden" name="next" value="{{ next_url }}">
+            <div class="mb-3">
+              <label class="form-label" for="username">Username</label>
+              <input
+                class="form-control"
+                id="username"
+                name="username"
+                type="text"
+                autocomplete="username"
+                value="{{ form.username }}"
+                required
+              >
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label" for="password">Password</label>
+              <input
+                class="form-control"
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+              >
+            </div>
+
+            <div class="d-grid">
+              <button class="btn btn-primary" type="submit">Sign In</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <p class="text-muted text-center small mt-3">
+        Default admin username is <code>admin</code>. Update credentials via environment variables for production use.
+      </p>
+    </div>
+  </div>
+{% endblock %}
