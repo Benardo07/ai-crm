@@ -96,6 +96,13 @@ Visit `http://localhost:5000/`. You’ll be redirected to `/login`. Sign in with
 - **Deployment** – Gunicorn is bundled for WSGI hosting (e.g., Render). Example command: `gunicorn run:app`.
 - **Database** – For production, consider Postgres by setting `DATABASE_URL` (alias: `SQLALCHEMY_DATABASE_URI`).
 
+### Deploying to Railway
+
+1. Create a new Railway project and select the repo.
+2. Set the required environment variables (`SECRET_KEY`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` or hash, optional `DATABASE_URL`).
+3. Railway will detect `Procfile` and run `gunicorn --bind 0.0.0.0:$PORT run:app`.
+4. The app listens on the provided `PORT`, so no further changes are needed.
+
 ---
 
 ## Project Commands
