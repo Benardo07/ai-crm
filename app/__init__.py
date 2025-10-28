@@ -14,8 +14,12 @@ def create_app() -> Flask:
 
     app = Flask(__name__)
 
+    database_uri = os.environ.get("DATABASE_URL") or os.environ.get("SQLALCHEMY_DATABASE_URI")
+    if not database_uri:
+        database_uri = "sqlite:///crm.db"
+
     app.config.update(
-        SQLALCHEMY_DATABASE_URI="sqlite:///crm.db",
+        SQLALCHEMY_DATABASE_URI=database_uri,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
     )
 
